@@ -28,16 +28,19 @@ export class UserController {
       const user = await new User(data).save();
       const payload = {
         // user_id: user.id,
-        aud: user._id,
+        // aud: user._id,
         email: user.email,
-        type: user.type
+        type: user.type,
       };
-      const token = Jwt.jwtSign(payload);
-      // SEND email to user for verification
+      // filter user data to pass in frontend
+      const access_token = Jwt.jwtSign(payload, user._id);
+      const refresh_token = Jwt.jwtSignRefreshToken(payload, user._id);
       res.json({
-        token: token,
-        user: user
+        access_token: access_token,
+        refresh_token: refresh_token,
+        user: user,
       });
+      // SEND email to user for verification
       await NodeMailer.sendMail({
         to: [user.email],
         subject: "Email verification",
@@ -60,7 +63,7 @@ export class UserController {
         },
         {
           email_verified: true,
-          updated_at: new Date()
+          updated_at: new Date(),
         },
         {
           new: true,
@@ -104,33 +107,35 @@ export class UserController {
     }
   }
 
-  static async signin(req,res, next){
+  static async signin(req, res, next) {
     const user = req.user;
     const password = req.query.password;
     const data = {
       password,
-      encrypt_password: user.password
+      encrypt_password: user.password,
     };
     try {
       //compares the password against encrypted password
       await Utils.comparePassword(data);
       const payload = {
         // user_id: user._id,
-        aud: user._id,
+        // aud: user._id,
         email: user.email,
-        type: user.type
+        type: user.type,
       };
-      const token = Jwt.jwtSign(payload);
+      const access_token = Jwt.jwtSign(payload, user._id);
+      const refresh_token = Jwt.jwtSignRefreshToken(payload, user._id);
       res.json({
-        token: token,
-        user: user
+        access_token: access_token,
+        refresh_token: refresh_token,
+        user: user,
       });
     } catch (e) {
       next(e);
     }
   }
 
-  static async sendResetPasswordOtp(req,res, next){
+  static async sendResetPasswordOtp(req, res, next) {
     const email = req.query.email;
     const reset_password_token = Utils.generateVerificationToken();
     try {
@@ -158,12 +163,12 @@ export class UserController {
   }
 
   static verifyResetPasswordToken(req, res, next) {
-    res.json({success: true})
+    res.json({ success: true });
   }
 
-  static async resetPassword(req, res, next){
-      const user = req.user;
-      const new_password = req.body.new_password;
+  static async resetPassword(req, res, next) {
+    const user = req.user;
+    const new_password = req.body.new_password;
     try {
       const encrypted_password = await Utils.encryptPassword(new_password);
       const updated_user = await User.findByIdAndUpdate(
@@ -172,7 +177,7 @@ export class UserController {
           updated_at: new Date(),
           password: encrypted_password,
         },
-        {new:true}
+        { new: true }
       );
       if (updated_user) {
         res.send(updated_user);
@@ -184,7 +189,7 @@ export class UserController {
     }
   }
 
-  static async profile(req, res, next){
+  static async profile(req, res, next) {
     const user = req.user;
     try {
       const profile = await User.findById(user.aud);
@@ -198,14 +203,14 @@ export class UserController {
     }
   }
 
-  static async updatePhoneNumber(req, res, next){
+  static async updatePhoneNumber(req, res, next) {
     const user = req.user;
     const phone = req.body.phone;
     try {
       const user_data = await User.findByIdAndUpdate(
         user.aud,
-        {phone: phone, updated_at: new Date()},
-        {new: true}
+        { phone: phone, updated_at: new Date() },
+        { new: true }
       );
       res.send(user_data);
     } catch (e) {
@@ -213,19 +218,19 @@ export class UserController {
     }
   }
 
-  static async updateUserProfile(req, res, next){
+  static async updateUserProfile(req, res, next) {
     const user = req.user;
     const phone = req.body.phone;
     const new_email = req.body.email;
     const plain_password = req.body.password;
     const verification_token = Utils.generateVerificationToken();
-    
+
     try {
       const user_data = await User.findById(user.aud);
-      if(!user_data) throw new Error('User does not exist');
+      if (!user_data) throw new Error("User does not exist");
       await Utils.comparePassword({
         password: plain_password,
-        encrypt_password: user_data.password
+        encrypt_password: user_data.password,
       });
       const updated_user = await User.findByIdAndUpdate(
         user.aud,
@@ -235,20 +240,22 @@ export class UserController {
           email_verified: false,
           verification_token,
           verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
-          updated_at: new Date()
+          updated_at: new Date(),
         },
-        {new: true}
+        { new: true }
       );
       const payload = {
         // user_id: user.id,
-        aud: user.aud,
+        // aud: user.aud,
         email: updated_user.email,
-        type: updated_user.type
+        type: updated_user.type,
       };
-      const token = Jwt.jwtSign(payload);
+      const access_token = Jwt.jwtSign(payload, user.aud);
+      const refresh_token = Jwt.jwtSignRefreshToken(payload, user.aud);
       res.json({
-        token: token,
-        user: updated_user
+        access_token: access_token,
+        refresh_token: refresh_token,
+        user: updated_user,
       });
       // send email to user for updated email verification
       await NodeMailer.sendMail({
@@ -257,6 +264,36 @@ export class UserController {
         html: `<h1>Your OTP is ${verification_token}</h1>`,
       });
     } catch (e) {
+      next(e);
+    }
+  }
+
+  static async getNewToken(req, res, next) {
+    const refresh_token = req.body.refresh_token;
+    try {
+      const decoded_data = await Jwt.jwtVerifyRefreshToken(refresh_token);
+      if (decoded_data) {
+        const payload = {
+          // user_id: decoded_data.aud,
+          email: decoded_data.email,
+          type: decoded_data.type,
+        };
+        const access_token = Jwt.jwtSign(payload, decoded_data.aud);
+        const refresh_token = Jwt.jwtSignRefreshToken(
+          payload,
+          decoded_data.aud
+        );
+        res.json({
+          access_token: access_token,
+          refresh_token: refresh_token,
+        });
+      }else{
+        req.errorStatus = 403;
+        // throw new Error('Access is forbidden');
+        throw ('Access is forbidden');
+      }
+    } catch (e) {
+      req.errorStatus = 403;
       next(e);
     }
   }

@@ -23,6 +23,8 @@ import { GlobalMiddleWare } from '../middlewares/GlobalMiddleWare';
 
     postRoutes(){
         this.router.post('/signup', UserValidators.signup(),GlobalMiddleWare.checkError, UserController.signup);
+        this.router.post('/refreshToken', UserValidators.checkRefreshToken(),GlobalMiddleWare.checkError, UserController.getNewToken);
+
     }
     patchRoutes(){
         this.router.patch('/reset/password', UserValidators.resetPassword(),GlobalMiddleWare.checkError, UserController.resetPassword);

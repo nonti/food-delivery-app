@@ -4,6 +4,7 @@ import { ProdEnvironment } from "./environment.prod";
 export interface Environment {
     db_uri: string,
     jwt_secret_key: string,
+    jwt_refresh_secret_key: string,
     sendgrid?: {
         api_key: string,
         email_from: string,
@@ -11,6 +12,12 @@ export interface Environment {
     gmail_auth?: {
         user: string,
         pass: string,
+    },
+    redis?: {
+        username?: string,
+        password?: string,
+        host: string,
+        port: number
     }
 };
 export function getEnvironmentVariables(){

@@ -13,6 +13,7 @@ import AddressRouter from './routes/AddressRouter';
 import OrderRouter from './routes/OrderRouter';
 import * as dotenv from 'dotenv';
 import { Utils } from './utils/Utils';
+import { Redis } from './utils/Redis';
 
 export class Server {
 
@@ -28,6 +29,7 @@ export class Server {
   setConfigs() {
     this.dotenvConfigs();
     this.connectMongoDB();
+    this.connectRedis();
     this.allowCors();
     this.configureBodyParser();
   }
@@ -41,6 +43,10 @@ export class Server {
     });
   }
 
+  async connectRedis(){
+    Redis.connectToRedis();
+    
+  }
   configureBodyParser(){
     this.app.use(bodyParser.urlencoded({
       extended: true
