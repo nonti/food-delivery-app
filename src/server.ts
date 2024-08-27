@@ -11,6 +11,8 @@ import CategoryRouter from './routes/CategoryRouter';
 import ItemRouter from './routes/ItemRouter';
 import AddressRouter from './routes/AddressRouter';
 import OrderRouter from './routes/OrderRouter';
+import * as dotenv from 'dotenv';
+import { Utils } from './utils/Utils';
 
 export class Server {
 
@@ -24,12 +26,15 @@ export class Server {
   }
 
   setConfigs() {
+    this.dotenvConfigs();
     this.connectMongoDB();
     this.allowCors();
     this.configureBodyParser();
-
   }
 
+  dotenvConfigs(){
+    Utils.dotenvConfigs();
+  }
   connectMongoDB() {
     mongoose.connect(getEnvironmentVariables().db_uri).then(() => {
       console.log('Connected to MongoDB');
