@@ -16,8 +16,7 @@ export class Redis {
   static connectToRedis() {
     // this.client.on("error", (err) => console.log("Redis Client Error: ", err));
      client.connect().then(() => {
-    console.log('Connected to Redis');
-     
+      console.log('Connected to Redis');
      })
      .catch(e => {
         throw(e)
@@ -25,21 +24,40 @@ export class Redis {
   }
 
   static async setValue(key: string, value, expires_at?) {
-    let options: any;
-    if (expires_at) {
-      options = {
-        EX: expires_at,
-      };
+    try {
+      let options: any;
+      if (expires_at) {
+        options = {
+          EX: expires_at,
+        };
+      }
+      await client.set(key, value, options);
+      return;
+    } catch (e) {
+      console.log(e);
+      // throw new Error("Server not connected! Please try again...");
+      throw ("Server not connected! Please try again...");
     }
-    await client.set(key, value, options);
   }
 
   static async getValue(key: string) {
-    const value = await client.get(key);
-    return value;
+    try{
+      const value = await client.get(key);
+      return value;
+    }catch(e){
+      console.log(e);
+      // throw new Error("Your session is expired! Please signin again.");
+      throw ("Your session is expired! Please signin again.");
+    }
+    
   }
 
   static async deleteKey(key: string) {
-    await client.del(key)
+    try {
+        await client.del(key)
+    } catch (e) {
+       // throw new Error("Server not connected! Please try again...");
+       throw ("Server not connected! Please try again...");
+    }
   }
 }

@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
 		phone:{type: String, required: true},
 		type: {type: String, required: true},
     status: {type: String, required: true},
+    // uuid:{type: String},
 		created_at: {type: Date, required: true, default: new Date()},
     updated_at: {type: Date, required: true, default: new Date()}		
 	});

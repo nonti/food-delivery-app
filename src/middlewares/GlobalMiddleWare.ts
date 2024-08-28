@@ -30,6 +30,22 @@ export class GlobalMiddleWare {
 		}
 	}
 
+	static async decodeRefreshToken (req, res, next){
+		const refresh_token = req.body.refresh_token ;
+		try {
+			if(!refresh_token) {
+				req.errorStatus = 403;
+				next(new Error('User does Access is forbidden.  User does not exist'));
+			}
+			const decoded = await Jwt.jwtVerifyRefreshToken(refresh_token);
+			req.user = decoded;
+			next();
+		} catch (e) {
+			req.errorStatus = 401;
+			// next(e);
+			next(new Error('Ypur session expired.Please signin again...'));
+		}
+	}
 	static adminRole (req, res, next){
 		const user = req.user;
 			if(user.type !== 'admin'){ 
