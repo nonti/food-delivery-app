@@ -1,7 +1,7 @@
 import User from "../models/User";
-import { Jwt } from '../utils/Jwt';
+import { Jwt } from "../utils/Jwt";
 import { Utils } from "../utils/Utils";
-import  {NodeMailer} from "../utils/NodeMailer";
+import { NodeMailer } from "../utils/NodeMailer";
 export class UserController {
   static async signup(req, res, next) {
     const name = req.body.name;
@@ -26,6 +26,16 @@ export class UserController {
       };
 
       const user = await new User(data).save();
+      const user_data = {
+        email: user.email,
+        email_verified: user.email_verified,
+        phone: user.phone,
+        name: user.name,
+        type: user.type,
+        status: user.status,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      };
       const payload = {
         // user_id: user.id,
         // aud: user._id,
@@ -38,7 +48,7 @@ export class UserController {
       res.json({
         access_token: access_token,
         refresh_token: refresh_token,
-        user: user,
+        user: user_data,
       });
       // SEND email to user for verification
       await NodeMailer.sendMail({
@@ -67,6 +77,14 @@ export class UserController {
         },
         {
           new: true,
+          projection: {
+            verification_token: 0,
+            verification_token_time: 0,
+            reset_password_token: 0,
+            reset_password_token_time: 0,
+            __v: 0,
+            _id:0
+          },
         }
       );
       if (user) {
@@ -125,6 +143,16 @@ export class UserController {
       };
       const access_token = Jwt.jwtSign(payload, user._id);
       const refresh_token = Jwt.jwtSignRefreshToken(payload, user._id);
+      const user_data = {
+        email: user.email,
+        email_verified: user.email_verified,
+        phone: user.phone,
+        name: user.name,
+        type: user.type,
+        status: user.status,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      };
       res.json({
         access_token: access_token,
         refresh_token: refresh_token,
@@ -177,7 +205,17 @@ export class UserController {
           updated_at: new Date(),
           password: encrypted_password,
         },
-        { new: true }
+        {
+          new: true,
+          projection: {
+            verification_token: 0,
+            verification_token_time: 0,
+            reset_password_token: 0,
+            reset_password_token_time: 0,
+            __v: 0,
+            _id:0
+          },
+        }
       );
       if (updated_user) {
         res.send(updated_user);
@@ -194,7 +232,18 @@ export class UserController {
     try {
       const profile = await User.findById(user.aud);
       if (profile) {
-        res.send(profile);
+        const user_data = {
+          email: profile.email,
+          email_verified: profile.email_verified,
+          phone: profile.phone,
+          name: profile.name,
+          type: profile.type,
+          status: profile.status,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at,
+        };
+        //res.send(profile)
+        res.send(user_data);
       } else {
         throw new Error("User does not exist");
       }
@@ -210,7 +259,17 @@ export class UserController {
       const user_data = await User.findByIdAndUpdate(
         user.aud,
         { phone: phone, updated_at: new Date() },
-        { new: true }
+        {
+          new: true,
+          projection: {
+            verification_token: 0,
+            verification_token_time: 0,
+            reset_password_token: 0,
+            reset_password_token_time: 0,
+            __v: 0,
+            _id:0
+          },
+        }
       );
       res.send(user_data);
     } catch (e) {
@@ -242,7 +301,17 @@ export class UserController {
           verification_token_time: Date.now() + new Utils().MAX_TOKEN_TIME,
           updated_at: new Date(),
         },
-        { new: true }
+        {
+          new: true,
+          projection: {
+            verification_token: 0,
+            verification_token_time: 0,
+            reset_password_token: 0,
+            reset_password_token_time: 0,
+            __v: 0,
+            _id:0
+          },
+        }
       );
       const payload = {
         // user_id: user.id,
@@ -287,10 +356,10 @@ export class UserController {
           access_token: access_token,
           refresh_token: refresh_token,
         });
-      }else{
+      } else {
         req.errorStatus = 403;
         // throw new Error('Access is forbidden');
-        throw ('Access is forbidden');
+        throw "Access is forbidden";
       }
     } catch (e) {
       req.errorStatus = 403;

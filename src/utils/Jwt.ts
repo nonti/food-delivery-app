@@ -2,7 +2,7 @@ import { getEnvironmentVariables } from "../environments/environment";
 import * as jwt from "jsonwebtoken";
 import * as Crypto from "crypto";
 export class Jwt {
-  static jwtSign(payload, userId, expires_in: string = "40s") {
+  static jwtSign(payload, userId, expires_in: string = "50s") {
     // Jwt.gen_secret_key()
     return jwt.sign(payload, getEnvironmentVariables().jwt_secret_key, {
       expiresIn: expires_in,
